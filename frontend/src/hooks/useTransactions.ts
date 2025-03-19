@@ -2,13 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Transaction, TransactionFilter } from '../types/Transaction';
 import { api } from '../services/api';
 
-// Datos de ejemplo para empezar sin backend
-const dummyTransactions: Transaction[] = [
-  { id: 1, name: 'Factura Electricidad', date: '2024-05-01', amount: 150, status: 'PENDING' },
-  { id: 2, name: 'Compra Supermercado', date: '2024-05-02', amount: 75.50, status: 'PAID' },
-  { id: 3, name: 'Suscripción Internet', date: '2024-05-05', amount: 45, status: 'PENDING' }
-];
-
 export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -82,7 +75,6 @@ export const useTransactions = () => {
     fetchTransactions(filters);
   };
 
-  // Cargar transacciones al montar el componente
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);

@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/transactions")
+@RequestMapping("/transactions")
 @CrossOrigin(origins = "http://localhost:3000")
 public class TransactionController {
 

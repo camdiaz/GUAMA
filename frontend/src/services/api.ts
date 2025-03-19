@@ -3,7 +3,6 @@ import { Transaction } from '../types/Transaction';
 
 const API_URL = 'http://localhost:8080/api/transactions';
 
-// Configuración de Axios con interceptores para manejar errores
 const apiClient = axios.create({
   baseURL: API_URL
 });
