@@ -3,12 +3,12 @@ import { createTheme } from '@mui/material/styles';
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#FF7F32', // Color naranja de Guamacard
+      main: '#FF7F32',
       light: '#ff9b59',
       dark: '#cc6628',
     },
     secondary: {
-      main: '#000000', // Negro para contraste
+      main: '#000000',
       light: '#2c2c2c',
       dark: '#000000',
     },

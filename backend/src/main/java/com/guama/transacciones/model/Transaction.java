@@ -33,7 +33,6 @@ public class Transaction {
         PENDING, PAID
     }
     
-    // Getters y setters manuales
     public Long getId() {
         return id;
     }

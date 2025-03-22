@@ -98,10 +98,4 @@ mvn test
 ## Notas sobre la implementación
 
 - Se utiliza H2 como base de datos en memoria para simplicidad
-- La interfaz está diseñada siguiendo los colores de Guama (naranja principal)
 - Las transacciones pagadas se muestran con estado diferente y sin opciones de edición
-
-## Documentación API
-
-La documentación de la API está disponible en:
-http://localhost:8080/api/swagger-ui.html 

@@ -29,8 +29,6 @@ function App() {
     );
   }
 
-  console.log("Transactions:", transactions); // Para depuración
-
   return (
     <ThemeProvider theme={theme}>
       <Layout>

@@ -6,7 +6,6 @@ const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 
-// Definimos los tipos
 interface Transaction {
   id?: number;
   name: string;
@@ -21,25 +20,17 @@ interface TransactionFilter {
   status: string;
 }
 
-// Datos de ejemplo
-const initialTransactions: Transaction[] = [
-  { id: 1, name: 'Factura Electricidad', date: '2024-05-01', amount: 150, status: 'PENDING' },
-  { id: 2, name: 'Compra Supermercado', date: '2024-05-02', amount: 75.5, status: 'PAID' },
-  { id: 3, name: 'Suscripción Internet', date: '2024-05-05', amount: 45, status: 'PENDING' }
-];
-
 const FullApp = () => {
-  // Estado para las transacciones
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
-  // Estado para los filtros
   const [filters, setFilters] = useState<TransactionFilter>({
     name: '',
     date: '',
     status: ''
   });
 
-  // Estados para los formularios
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -51,7 +42,6 @@ const FullApp = () => {
   });
   const [paymentAmount, setPaymentAmount] = useState(0);
 
-  // Función para filtrar transacciones
   const filteredTransactions = transactions.filter(transaction => {
     const matchesName = !filters.name || 
       transaction.name.toLowerCase().includes(filters.name.toLowerCase());
@@ -60,25 +50,57 @@ const FullApp = () => {
     return matchesName && matchesDate && matchesStatus;
   });
 
-  // Función para añadir una transacción
-  const addTransaction = () => {
-    if (newTransaction.name && newTransaction.date && newTransaction.amount > 0) {
-      const transaction: Transaction = {
-        ...newTransaction,
-        id: Math.max(0, ...transactions.map(t => t.id || 0)) + 1,
-        status: 'PENDING'
-      };
-      setTransactions([...transactions, transaction]);
-      setNewTransaction({
-        name: '',
-        date: new Date().toISOString().split('T')[0],
-        amount: 0
-      });
-      setShowAddForm(false);
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://localhost:8080/api/transactions');
+      if (!response.ok) {
+        throw new Error('Error al cargar las transacciones');
+      }
+      const data = await response.json();
+      setTransactions(data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setError('No se pudieron cargar las transacciones del servidor');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Función para editar una transacción
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const addTransaction = async () => {
+    if (newTransaction.name && newTransaction.date && newTransaction.amount > 0) {
+      try {
+        const response = await fetch('http://localhost:8080/api/transactions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newTransaction),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al crear la transacción');
+        }
+        
+        await fetchTransactions();
+        setNewTransaction({
+          name: '',
+          date: new Date().toISOString().split('T')[0],
+          amount: 0
+        });
+        setShowAddForm(false);
+      } catch (err) {
+        console.error('Error creating transaction:', err);
+        setError('Error al crear la transacción');
+      }
+    }
+  };
+
   const startEditTransaction = (transaction: Transaction) => {
     setCurrentTransaction(transaction);
     setNewTransaction({
@@ -89,56 +111,74 @@ const FullApp = () => {
     setShowEditForm(true);
   };
 
-  const updateTransaction = () => {
+  const updateTransaction = async () => {
     if (currentTransaction && newTransaction.name && newTransaction.date && newTransaction.amount > 0) {
-      const updatedTransactions = transactions.map(t => 
-        t.id === currentTransaction.id 
-          ? { ...t, name: newTransaction.name, date: newTransaction.date, amount: newTransaction.amount }
-          : t
-      );
-      setTransactions(updatedTransactions);
-      setCurrentTransaction(null);
-      setNewTransaction({
-        name: '',
-        date: new Date().toISOString().split('T')[0],
-        amount: 0
-      });
-      setShowEditForm(false);
-    }
-  };
-
-  // Función para eliminar una transacción
-  const deleteTransaction = (id: number) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
-
-  // Función para procesar un pago
-  const processPayment = () => {
-    if (paymentAmount <= 0) return;
-
-    let remainingAmount = paymentAmount;
-    const pendingTransactions = [...transactions]
-      .filter(t => t.status === 'PENDING')
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const updatedTransactions = [...transactions];
-    
-    for (const transaction of pendingTransactions) {
-      if (remainingAmount >= transaction.amount) {
-        const index = updatedTransactions.findIndex(t => t.id === transaction.id);
-        updatedTransactions[index] = { ...transaction, status: 'PAID' };
-        remainingAmount -= transaction.amount;
-      } else {
-        break;
+      try {
+        const response = await fetch(`http://localhost:8080/api/transactions/${currentTransaction.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(newTransaction),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Error al actualizar la transacción');
+        }
+        
+        await fetchTransactions();
+        setCurrentTransaction(null);
+        setNewTransaction({
+          name: '',
+          date: new Date().toISOString().split('T')[0],
+          amount: 0
+        });
+        setShowEditForm(false);
+      } catch (err) {
+        console.error('Error updating transaction:', err);
+        setError('Error al actualizar la transacción');
       }
     }
-    
-    setTransactions(updatedTransactions);
-    setPaymentAmount(0);
-    setShowPaymentForm(false);
   };
 
-  // Calcular totales
+  const deleteTransaction = async (id: number) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/transactions/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al eliminar la transacción');
+      }
+      
+      await fetchTransactions();
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+      setError('Error al eliminar la transacción');
+    }
+  };
+
+  const processPayment = async () => {
+    if (paymentAmount <= 0) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/transactions/process-payment?amount=${paymentAmount}`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Error al procesar el pago');
+      }
+      
+      await fetchTransactions();
+      setPaymentAmount(0);
+      setShowPaymentForm(false);
+    } catch (err) {
+      console.error('Error processing payment:', err);
+      setError('Error al procesar el pago');
+    }
+  };
+
   const pendingTotal = transactions
     .filter(t => t.status === 'PENDING')
     .reduce((sum, t) => sum + t.amount, 0);
@@ -147,7 +187,6 @@ const FullApp = () => {
     .filter(t => t.status === 'PAID')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Estilos comunes
   const buttonStyle = { 
     backgroundColor: '#FF7F32', 
     color: 'white', 
@@ -188,9 +227,30 @@ const FullApp = () => {
     zIndex: 1000
   };
 
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <p>Cargando transacciones...</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ margin: '20px' }}>
       <h1 style={{ color: '#7a3cff' }}>Sistema de Transacciones</h1>
+      
+      {/* Mostrar mensaje de error si existe */}
+      {error && (
+        <div style={{ 
+          backgroundColor: '#f8d7da', 
+          color: '#721c24', 
+          padding: '10px', 
+          borderRadius: '5px',
+          marginBottom: '15px'
+        }}>
+          {error}
+        </div>
+      )}
       
       {/* Resumen */}
       <div style={{ 
@@ -310,7 +370,7 @@ const FullApp = () => {
       <div style={{ marginTop: '20px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ backgroundColor: '#FF7F32', color: 'white' }}>
+            <tr style={{ backgroundColor: '#7a3cff', color: 'white' }}>
               <th style={{ padding: '12px', textAlign: 'left' }}>Nombre</th>
               <th style={{ padding: '12px', textAlign: 'left' }}>Fecha</th>
               <th style={{ padding: '12px', textAlign: 'left' }}>Valor</th>
